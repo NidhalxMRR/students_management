@@ -8,7 +8,6 @@ pipeline {
     stages {
         stage('Checkout Code') {
             steps {
-                // This natively pulls the code from the GitHub repository configured under SCM settings
                 checkout scm
             }
         }
@@ -21,7 +20,15 @@ pipeline {
 
         stage('Test') {
             steps {
-                sh 'mvn test -DskipTests || true'
+                sh 'mvn test'
+            }
+        }
+
+        stage('SonarQube Analysis') {
+            steps {
+                withSonarQubeEnv('SonarQube') {
+                    sh 'mvn sonar:sonar -Dsonar.projectKey=students-management -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml'
+                }
             }
         }
 
