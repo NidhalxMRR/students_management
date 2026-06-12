@@ -26,7 +26,7 @@ class DepartmentServiceTest {
     @InjectMocks
     private DepartmentService departmentService;
 
-    Department department;
+    private Department department;
 
     @BeforeEach
     void setUp() {

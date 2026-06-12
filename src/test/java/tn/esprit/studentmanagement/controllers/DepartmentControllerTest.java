@@ -25,6 +25,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @ExtendWith(MockitoExtension.class)
 class DepartmentControllerTest {
 
+    private static final String BASE_URL = "/Depatment";
+    private static final String DEPT_NAME = "IT";
+
     private MockMvc mockMvc;
 
     @Mock
@@ -33,16 +36,16 @@ class DepartmentControllerTest {
     @InjectMocks
     private DepartmentController departmentController;
 
-    private ObjectMapper objectMapper = new ObjectMapper();
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
-    Department department;
-    DepartmentDTO departmentDTO;
+    private Department department;
+    private DepartmentDTO departmentDTO;
 
     @BeforeEach
     void setUp() {
         mockMvc = MockMvcBuilders.standaloneSetup(departmentController).build();
-        department = new Department(1L, "IT", "Building A", "123", "John Doe", null);
-        departmentDTO = new DepartmentDTO(1L, "IT", "Building A", "123", "John Doe");
+        department = new Department(1L, DEPT_NAME, "Building A", "123", "John Doe", null);
+        departmentDTO = new DepartmentDTO(1L, DEPT_NAME, "Building A", "123", "John Doe");
     }
 
     @Test
@@ -50,9 +53,9 @@ class DepartmentControllerTest {
         List<Department> departments = Arrays.asList(department);
         when(departmentService.getAllDepartments()).thenReturn(departments);
 
-        mockMvc.perform(get("/Depatment/getAllDepartment"))
+        mockMvc.perform(get(BASE_URL + "/getAllDepartment"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].name").value("IT"));
+                .andExpect(jsonPath("$[0].name").value(DEPT_NAME));
 
         verify(departmentService, times(1)).getAllDepartments();
     }
@@ -61,9 +64,9 @@ class DepartmentControllerTest {
     void testGetDepartment() throws Exception {
         when(departmentService.getDepartmentById(1L)).thenReturn(department);
 
-        mockMvc.perform(get("/Depatment/getDepartment/1"))
+        mockMvc.perform(get(BASE_URL + "/getDepartment/1"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.name").value("IT"));
+                .andExpect(jsonPath("$.name").value(DEPT_NAME));
 
         verify(departmentService, times(1)).getDepartmentById(1L);
     }
@@ -72,29 +75,29 @@ class DepartmentControllerTest {
     void testCreateDepartment() throws Exception {
         when(departmentService.saveDepartment(any(Department.class))).thenReturn(department);
 
-        mockMvc.perform(post("/Depatment/createDepartment")
+        mockMvc.perform(post(BASE_URL + "/createDepartment")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(departmentDTO)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.name").value("IT"));
+                .andExpect(jsonPath("$.name").value(DEPT_NAME));
     }
 
     @Test
     void testUpdateDepartment() throws Exception {
         when(departmentService.saveDepartment(any(Department.class))).thenReturn(department);
 
-        mockMvc.perform(put("/Depatment/updateDepartment")
+        mockMvc.perform(put(BASE_URL + "/updateDepartment")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(departmentDTO)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.name").value("IT"));
+                .andExpect(jsonPath("$.name").value(DEPT_NAME));
     }
 
     @Test
     void testDeleteDepartment() throws Exception {
         doNothing().when(departmentService).deleteDepartment(1L);
 
-        mockMvc.perform(delete("/Depatment/deleteDepartment/1"))
+        mockMvc.perform(delete(BASE_URL + "/deleteDepartment/1"))
                 .andExpect(status().isOk());
 
         verify(departmentService, times(1)).deleteDepartment(1L);
