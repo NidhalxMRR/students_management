@@ -1,29 +1,24 @@
 pipeline {
     agent any
-
     environment {
         DOCKER_IMAGE = 'nidhalgharbiii/students-management:1.0.0'
     }
-
     stages {
         stage('Checkout Code') {
             steps {
                 checkout scm
             }
         }
-
         stage('Build') {
             steps {
                 sh 'mvn clean package -DskipTests'
             }
         }
-
         stage('Test') {
             steps {
                 sh 'mvn test'
             }
         }
-
         stage('SonarQube Analysis') {
             steps {
                 withSonarQubeEnv('SonarQube') {
@@ -31,13 +26,11 @@ pipeline {
                 }
             }
         }
-
         stage('Docker Build') {
             steps {
                 sh "DOCKER_BUILDKIT=0 docker build -t ${DOCKER_IMAGE} ."
             }
         }
-
         stage('Docker Push') {
             steps {
                 withCredentials([usernamePassword(credentialsId: 'docker-hub-creds', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
@@ -50,40 +43,20 @@ pipeline {
                 }
             }
         }
-
-        stage('Docker Run') {
+        stage('Kubernetes Deploy') {
             steps {
                 sh '''
-                    docker stop students-app mysql-db || true
-                    docker rm students-app mysql-db || true
-                    docker rmi mysql:8.0.36 || true
-                    docker network create students-net || true
-
-                    docker run -d \
-                      --name mysql-db \
-                      --network students-net \
-                      -e MYSQL_ROOT_PASSWORD=root \
-                      -e MYSQL_DATABASE=students_db \
-                      mysql:8.0.36
-
-                    sleep 25
-
-                    docker run -d \
-                      --name students-app \
-                      --network students-net \
-                      -p 9090:8080 \
-                      -e SPRING_DATASOURCE_URL='jdbc:mysql://mysql-db:3306/students_db?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true' \
-                      -e SPRING_DATASOURCE_USERNAME=root \
-                      -e SPRING_DATASOURCE_PASSWORD=root \
-                      nidhalgharbiii/students-management:1.0.0
+                    kubectl apply -f k8s/mysql-deployment.yaml
+                    sleep 20
+                    kubectl apply -f k8s/spring-deployment.yaml
+                    kubectl rollout status deployment/spring-app -n devops --timeout=90s
                 '''
             }
         }
     }
-
     post {
         success {
-            echo 'Pipeline OK ! App disponible sur le port 9090.'
+            echo 'Pipeline OK ! App deployée sur Kubernetes - namespace devops.'
         }
         failure {
             echo 'Pipeline échoué !'
