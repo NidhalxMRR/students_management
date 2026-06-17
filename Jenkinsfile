@@ -1,41 +1,55 @@
 pipeline {
     agent any
+    
     environment {
         DOCKER_IMAGE = 'nidhalgharbiii/students-management:1.0.0'
     }
+    
     stages {
         stage('Checkout Code') {
             steps {
+                // Wipe the workspace folder completely before checking out to prevent caching errors
+                cleanWs()
+                
                 checkout([
                     $class: 'GitSCM',
                     branches: [[name: '*/main']],
                     extensions: [[$class: 'CleanBeforeCheckout']],
-                    userRemoteConfigs: [[url: 'https://github.com/NidhalxMRR/students-management']]
+                    userRemoteConfigs: [[url: 'https://github.com/NidhalxMRR/students_management.git']]
                 ])
             }
         }
+        
         stage('Build') {
             steps {
                 sh 'mvn clean package -DskipTests'
             }
         }
+        
         stage('Test') {
             steps {
                 sh 'mvn test'
             }
         }
+        
         stage('SonarQube Analysis') {
             steps {
                 withSonarQubeEnv('SonarQube') {
-                    sh 'mvn sonar:sonar -Dsonar.projectKey=students-management -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml'
+                    sh '''
+                        mvn sonar:sonar \
+                        -Dsonar.projectKey=students-management \
+                        -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml
+                    '''
                 }
             }
         }
+        
         stage('Docker Build') {
             steps {
                 sh "DOCKER_BUILDKIT=0 docker build -t ${DOCKER_IMAGE} ."
             }
         }
+        
         stage('Docker Push') {
             steps {
                 withCredentials([usernamePassword(credentialsId: 'docker-hub-creds', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
@@ -48,6 +62,7 @@ pipeline {
                 }
             }
         }
+        
         stage('Kubernetes Deploy') {
             steps {
                 sh '''
@@ -59,6 +74,7 @@ pipeline {
             }
         }
     }
+    
     post {
         success {
             echo 'Pipeline OK ! App deployée sur Kubernetes - namespace devops.'
