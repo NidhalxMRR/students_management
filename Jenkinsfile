@@ -6,7 +6,12 @@ pipeline {
     stages {
         stage('Checkout Code') {
             steps {
-                checkout scm
+                checkout([
+                    $class: 'GitSCM',
+                    branches: [[name: '*/main']],
+                    extensions: [[$class: 'CleanBeforeCheckout']],
+                    userRemoteConfigs: [[url: 'https://github.com/NidhalxMRR/students-management']]
+                ])
             }
         }
         stage('Build') {
